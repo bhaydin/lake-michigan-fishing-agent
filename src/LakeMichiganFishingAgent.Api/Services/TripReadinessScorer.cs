@@ -6,14 +6,14 @@ public sealed class TripReadinessScorer
 {
     public static readonly string[] Rules =
     [
-        "Good: waves below 2 ft, wind below 15 mph, and no hazards in the next two periods.",
+        "Good: assessed nearshore/open-water periods stay below 2 ft waves, below 15 mph wind, and include no hazards.",
         "Caution: waves from 2 to 3.5 ft, wind from 15 to 20 mph, or non-severe advisory language.",
         "Bad: waves above 3.5 ft, wind above 20 mph, or hazards mentioning small craft, gale, thunder, or storms."
     ];
 
     public ReadinessScore Score(IReadOnlyList<ForecastPeriod> periods)
     {
-        var relevantPeriods = periods.Take(2).ToArray();
+        var relevantPeriods = periods.ToArray();
         if (relevantPeriods.Length == 0)
         {
             return new ReadinessScore("Bad", 0, ["No forecast periods are available."], Rules);
@@ -74,7 +74,7 @@ public sealed class TripReadinessScorer
         return new ReadinessScore(
             "Good",
             90,
-            [$"Next conditions stay under 2 ft waves and 15 mph wind across {relevantPeriods.Length} forecast period(s)."],
+            [$"Assessed conditions stay under 2 ft waves and 15 mph wind across {relevantPeriods.Length} forecast period(s)."],
             Rules);
     }
 }

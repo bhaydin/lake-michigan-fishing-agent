@@ -41,13 +41,36 @@ public sealed class MockMarineForecastProvider(IConfiguration configuration) : I
                 ["Small Craft Advisory possible"])
         ];
 
+        var nearshore = new MarineForecastProduct(
+            "Nearshore",
+            "NSH",
+            "Nearshore Marine Forecast",
+            "KMKX",
+            configuration["Noaa:NearshoreZone"] ?? zone,
+            now,
+            "Mock NOAA/NWS nearshore marine forecast",
+            "Mock nearshore forecast for waters within five nautical miles of shore.",
+            periods.Take(2).ToArray());
+
+        var openWater = new MarineForecastProduct(
+            "Open Water",
+            "GLF",
+            "Great Lakes Forecast",
+            "KMKX",
+            configuration["Noaa:OpenWaterZone"] ?? "LMZ671",
+            now,
+            "Mock NOAA/NWS open lake forecast",
+            "Mock open lake forecast for waters beyond five nautical miles of shore.",
+            periods.Skip(1).ToArray());
+
         return Task.FromResult(new MarineForecast(
             location,
             zone,
             now.AddMinutes(-20),
             now,
             "Mock NOAA/NWS marine forecast",
-            periods));
+            periods,
+            [nearshore, openWater]));
     }
 
     private string ResolveLocationLabel(ForecastRequest request)

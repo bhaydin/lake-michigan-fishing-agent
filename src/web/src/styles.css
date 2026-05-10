@@ -186,7 +186,8 @@ h3 {
 }
 
 .summary-grid,
-.content-grid {
+.content-grid,
+.marine-products {
   display: grid;
   gap: 16px;
   margin-top: 18px;
@@ -232,6 +233,43 @@ h3 {
   padding: 20px;
 }
 
+.panel-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.panel-heading h2 {
+  margin-bottom: 4px;
+}
+
+.panel-heading p {
+  margin-bottom: 0;
+  color: #4d626b;
+}
+
+.source-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  color: #31454d;
+  font-size: 0.82rem;
+  font-weight: 800;
+  border: 1px solid #c9d5da;
+  border-radius: 999px;
+  background: #f2f6f8;
+}
+
+.source-pill.live {
+  color: #0f5132;
+  border-color: #b7dfc7;
+  background: #dff5e8;
+}
+
 .cards {
   display: grid;
   gap: 14px;
@@ -239,6 +277,10 @@ h3 {
 
 .forecast-card {
   padding: 18px;
+}
+
+.forecast-card.compact {
+  box-shadow: none;
 }
 
 .forecast-card dl {
@@ -280,10 +322,40 @@ h3 {
   font-size: 0.88rem;
 }
 
+.marine-products {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.marine-product .cards {
+  grid-template-columns: 1fr;
+}
+
+.raw-product {
+  margin-top: 16px;
+}
+
+.raw-product summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.raw-product pre {
+  max-height: 360px;
+  overflow: auto;
+  padding: 14px;
+  color: #22333b;
+  white-space: pre-wrap;
+  border: 1px solid #d3dde2;
+  border-radius: 8px;
+  background: #f7fafb;
+}
+
 @media (max-width: 820px) {
   .masthead,
   .summary-grid,
-  .content-grid {
+  .content-grid,
+  .marine-products {
     grid-template-columns: 1fr;
   }
 

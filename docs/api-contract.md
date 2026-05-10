@@ -11,6 +11,18 @@ Optional query parameters:
 
 When `Noaa__UseMock=true`, the API always returns mock data. When `Noaa__UseMock=false`, live NWS data is attempted and the mock provider is used as a fallback if geocoding or forecast retrieval fails.
 
+For Lake Michigan readiness, the API also pulls NOAA text marine products:
+
+- `NSH`: nearshore marine forecast, configured by `Noaa__NearshoreZone`.
+- `GLF`: Great Lakes open lake/open water forecast, configured by `Noaa__OpenWaterZone`.
+
+The scoring function uses parsed marine-product periods when they are available so nearshore and open-water wind/wave conditions can both affect the readiness rating.
+
+Error responses:
+
+- `400 Bad Request`: malformed ZIP code or incomplete/invalid coordinates.
+- `404 Not Found`: ZIP code is syntactically valid but cannot be geocoded.
+
 ```json
 {
   "location": "Lake Michigan near Milwaukee",
@@ -41,12 +53,36 @@ When `Noaa__UseMock=true`, the API always returns mock data. When `Noaa__UseMock
       "weatherSummary": "Partly sunny with light chop building late",
       "hazards": []
     }
+  ],
+  "marineProducts": [
+    {
+      "kind": "Nearshore",
+      "productCode": "NSH",
+      "productName": "Nearshore Marine Forecast",
+      "issuingOffice": "KMKX",
+      "zone": "LMZ644",
+      "issuedAt": "2026-05-10T02:10:00Z",
+      "source": "https://api.weather.gov/products/{id}",
+      "text": "LMZ644 product section text...",
+      "periods": []
+    },
+    {
+      "kind": "Open Water",
+      "productCode": "GLF",
+      "productName": "Great Lakes Forecast",
+      "issuingOffice": "KMKX",
+      "zone": "LMZ671",
+      "issuedAt": "2026-05-10T02:15:00Z",
+      "source": "https://api.weather.gov/products/{id}",
+      "text": "LMZ671 open lake product section text...",
+      "periods": []
+    }
   ]
 }
 ```
 
 ## Scoring Rules
 
-- `Good`: next two forecast periods remain below 2 ft waves, below 15 mph wind, and include no hazards.
+- `Good`: assessed nearshore/open-water periods remain below 2 ft waves, below 15 mph wind, and include no hazards.
 - `Caution`: next two forecast periods include waves from 2 to 3.5 ft, winds from 15 to 20 mph, or non-severe advisory language.
 - `Bad`: next two forecast periods include waves above 3.5 ft, winds above 20 mph, or hazards mentioning small craft, gale, thunder, or storms.
