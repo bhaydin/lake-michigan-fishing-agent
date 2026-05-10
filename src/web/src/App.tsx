@@ -27,6 +27,19 @@ type TripReadinessResponse = {
   source: string;
   readiness: ReadinessScore;
   periods: ForecastPeriod[];
+  marineProducts: MarineForecastProduct[];
+};
+
+type MarineForecastProduct = {
+  kind: string;
+  productCode: string;
+  productName: string;
+  issuingOffice: string;
+  zone: string;
+  issuedAt: string;
+  source: string;
+  text: string;
+  periods: ForecastPeriod[];
 };
 
 const fallback: TripReadinessResponse = {
@@ -66,7 +79,8 @@ const fallback: TripReadinessResponse = {
       weatherSummary: 'Clouds building with scattered showers possible.',
       hazards: ['Monitor nearshore conditions']
     }
-  ]
+  ],
+  marineProducts: []
 };
 
 const ratingClass: Record<ReadinessScore['rating'], string> = {
@@ -74,6 +88,8 @@ const ratingClass: Record<ReadinessScore['rating'], string> = {
   Caution: 'caution',
   Bad: 'bad'
 };
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? 'http://localhost:5000' : '');
 
 export function App() {
   const [forecast, setForecast] = useState<TripReadinessResponse | null>(null);
@@ -90,16 +106,15 @@ export function App() {
       setError(null);
 
       try {
-        const baseUrl = import.meta.env.VITE_API_BASE_URL ?? '';
-        const response = await fetch(`${baseUrl}/api/forecast/trip-readiness${query}`, {
+        const response = await fetch(`${apiBaseUrl}/api/forecast/trip-readiness${query}`, {
           signal: controller.signal
         });
 
         if (!response.ok) {
-          throw new Error(`Forecast request failed with ${response.status}`);
+          throw new Error(await readErrorMessage(response));
         }
 
-        setForecast(await response.json());
+        setForecast(await readJsonResponse<TripReadinessResponse>(response));
       } catch (loadError) {
         if (!controller.signal.aborted) {
           setError(loadError instanceof Error ? loadError.message : 'Forecast request failed');
@@ -138,9 +153,14 @@ export function App() {
 
   function useZipCode(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const normalizedZip = zipCode.trim();
+    const normalizedZip = zipCode.replace(/\D/g, '');
     if (normalizedZip.length === 0) {
       setQuery('');
+      return;
+    }
+
+    if (normalizedZip.length !== 5) {
+      setError('Enter a 5 digit US ZIP code.');
       return;
     }
 
@@ -148,8 +168,7 @@ export function App() {
   }
 
   const viewModel = forecast ?? fallback;
-  const current = viewModel.periods[0];
-  const next = viewModel.periods[1];
+  const sourceLabel = viewModel.source.startsWith('http') ? 'Live NWS forecast' : viewModel.source;
 
   return (
     <main className="shell">
@@ -210,9 +229,17 @@ export function App() {
 
       <section className="content-grid">
         <div className="panel">
-          <h2>Forecast periods</h2>
+          <div className="panel-heading">
+            <div>
+              <h2>Actual forecast</h2>
+              <p>{viewModel.periods.length} periods issued {formatDate(viewModel.issuedAt)}</p>
+            </div>
+            <span className={viewModel.source.startsWith('http') ? 'source-pill live' : 'source-pill'}>
+              {sourceLabel}
+            </span>
+          </div>
           <div className="cards">
-            {[current, next].filter(Boolean).map((period) => (
+            {viewModel.periods.map((period) => (
               <article className="forecast-card" key={`${period.name}-${period.startsAt}`}>
                 <div>
                   <h3>{period.name}</h3>
@@ -248,9 +275,54 @@ export function App() {
           <ul className="rules">
             {viewModel.readiness.rules.map((rule) => <li key={rule}>{rule}</li>)}
           </ul>
-          <p className="source">Source: {viewModel.source}</p>
+          <p className="source">Forecast source: {viewModel.source}</p>
         </aside>
       </section>
+
+      {viewModel.marineProducts.length > 0 && (
+        <section className="marine-products" aria-label="NOAA marine forecast products">
+          {viewModel.marineProducts.map((product) => (
+            <article className="panel marine-product" key={`${product.productCode}-${product.zone}`}>
+              <div className="panel-heading">
+                <div>
+                  <h2>{product.kind}</h2>
+                  <p>{product.productName} · {product.zone} · issued {formatDate(product.issuedAt)}</p>
+                </div>
+                <span className="source-pill live">{product.productCode}</span>
+              </div>
+              <div className="cards">
+                {product.periods.map((period) => (
+                  <article className="forecast-card compact" key={`${product.kind}-${period.name}-${period.startsAt}`}>
+                    <div>
+                      <h3>{period.name}</h3>
+                      <p>{period.weatherSummary}</p>
+                    </div>
+                    <dl>
+                      <div>
+                        <dt>Wind</dt>
+                        <dd>{period.windDirection} {period.windSpeedMph} mph</dd>
+                      </div>
+                      <div>
+                        <dt>Waves</dt>
+                        <dd>{period.waveHeightFeet.toFixed(1)} ft</dd>
+                      </div>
+                    </dl>
+                    {period.hazards.length > 0 && (
+                      <ul className="hazards">
+                        {period.hazards.map((hazard) => <li key={hazard}>{hazard}</li>)}
+                      </ul>
+                    )}
+                  </article>
+                ))}
+              </div>
+              <details className="raw-product">
+                <summary>Product text</summary>
+                <pre>{product.text}</pre>
+              </details>
+            </article>
+          ))}
+        </section>
+      )}
     </main>
   );
 }
@@ -284,4 +356,27 @@ function formatDate(value: string) {
 
 function formatWindow(start: string, end: string) {
   return `${formatDate(start)} to ${formatDate(end)}`;
+}
+
+async function readErrorMessage(response: Response) {
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    return `Forecast request failed with ${response.status}. The server returned ${contentType || 'a non-JSON response'}.`;
+  }
+
+  try {
+    const body = await response.json() as { error?: string };
+    return body.error ?? `Forecast request failed with ${response.status}`;
+  } catch {
+    return `Forecast request failed with ${response.status}`;
+  }
+}
+
+async function readJsonResponse<T>(response: Response) {
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    throw new Error(`Forecast API returned ${contentType || 'a non-JSON response'} instead of JSON.`);
+  }
+
+  return await response.json() as T;
 }

@@ -7,4 +7,5 @@ public sealed record TripReadinessResponse(
     DateTimeOffset LastUpdated,
     string Source,
     ReadinessScore Readiness,
-    IReadOnlyList<ForecastPeriod> Periods);
+    IReadOnlyList<ForecastPeriod> Periods,
+    IReadOnlyList<MarineForecastProduct> MarineProducts);

@@ -6,4 +6,5 @@ public sealed record MarineForecast(
     DateTimeOffset IssuedAt,
     DateTimeOffset LastUpdated,
     string Source,
-    IReadOnlyList<ForecastPeriod> Periods);
+    IReadOnlyList<ForecastPeriod> Periods,
+    IReadOnlyList<MarineForecastProduct> MarineProducts);

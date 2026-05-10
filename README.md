@@ -5,6 +5,7 @@ A runnable .NET Aspire + React MVP for planning Lake Michigan salmon and trout t
 ## What It Does
 
 - Reads forecast data from browser coordinates, a ZIP code, or a configurable NOAA/NWS endpoint.
+- Pulls both NOAA nearshore (`NSH`) and open lake/open water (`GLF`) Lake Michigan marine forecast products.
 - Falls back to a mock provider when live access is disabled or unavailable.
 - Normalizes forecast periods into wind, waves, weather summary, and hazards.
 - Scores trip readiness as `Good`, `Caution`, or `Bad`.
@@ -26,6 +27,8 @@ The API reads these settings from `src/LakeMichiganFishingAgent.Api/appsettings.
 - `Noaa__ForecastUrl`: optional NOAA/NWS JSON forecast endpoint used when no browser coordinates or ZIP code are supplied.
 - `Noaa__Location`: Display location.
 - `Noaa__Zone`: Marine zone label.
+- `Noaa__NearshoreZone`: NOAA nearshore marine zone used for the `NSH` product, such as `LMZ644`.
+- `Noaa__OpenWaterZone`: NOAA open-water marine zone used for the `GLF` product, such as `LMZ671`.
 
 Example live configuration:
 
@@ -36,6 +39,7 @@ export Noaa__Zone="LMZ644"
 ```
 
 The live provider accepts browser coordinates through `lat` and `lon`, ZIP codes through `zip`, or an explicit `Noaa__ForecastUrl`. Coordinates are resolved through the NWS `points` endpoint. ZIP geocoding uses `api.zippopotam.us` with a small Lake Michigan fallback list for offline demos.
+For Lake Michigan assessment, the backend also retrieves the latest nearshore `NSH` product and open lake `GLF` product from `api.weather.gov/products`, parses the configured zone sections, and scores against those marine product periods when available.
 
 ## Run With Aspire
 

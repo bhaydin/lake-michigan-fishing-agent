@@ -50,4 +50,14 @@ public sealed class ApiContractTests : IClassFixture<WebApplicationFactory<Progr
         Assert.Contains("53202", contract!.Location);
         Assert.NotEmpty(contract.Periods);
     }
+
+    [Fact]
+    public async Task TripReadinessEndpoint_ReturnsBadRequest_ForMalformedZipCode()
+    {
+        using var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/api/forecast/trip-readiness?zip=123");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }
